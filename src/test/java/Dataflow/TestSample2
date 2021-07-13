@@ -1,0 +1,12 @@
+TestPipeline p = TestPipeline.create().enableAbandonedNodeEnforcement(false);
+
+		Map<String, Long> map = new HashMap<String, Long>();
+		map.put("tenant1", (long) 4);
+		map.put("tenant2", (long) 0);
+	    PCollection<KV<String, Long>> input = p.apply(Create.of(map));
+	    input.apply(ParDo.of(new ParDoCustomClass()));
+
+	    p.run();
+	    
+	    String expectedResult = "{\"code\": \"INFO_001\",\"tenantId\":\"tenant1\", \"count\":\"4\"}";
+	    verify(mockLOG, times(1)).info(expectedResult);

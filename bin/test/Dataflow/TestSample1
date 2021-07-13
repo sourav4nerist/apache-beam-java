@@ -1,0 +1,25 @@
+TestPipeline p = TestPipeline.create().enableAbandonedNodeEnforcement(false);
+
+        PCollection<String> input = p.apply(Create.of(Arrays.asList(data)));
+        PCollectionTuple messages = input
+                .apply(ParDo.of(new ParDoCustomClass("testProject", "testInstance", "testSubscription", inpu1, input2))
+                        .withOutputTags(outputTag1, TupleTagList.of(outputTag2)));
+        
+        messages.get(outputTag2).apply("count invalid data", Count.<Event>globally())
+        .apply("assert tag2 data", ParDo.of(new DoFn<Long, String> (){
+            @ProcessElement
+            public void processElement(@Element Long item) {
+                assertEquals(2, item.intValue());
+            }
+        }));
+
+        messages.get(outputTag1).apply("text", Count.<KV<String, Event>>globally())
+        .apply("assert tag1 data", ParDo.of(new DoFn<Long, String> (){
+            @ProcessElement
+            public void processElement(@Element Long item) {
+                assertEquals(1, item.intValue());
+            }
+        }));
+        p.run().waitUntilFinish();
+        verify(mockLOG, times(2)).error(any(String.class));
+        verify(mockLOG, times(6)).info(any(String.class));
